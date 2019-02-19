@@ -64,4 +64,22 @@ def local_standard_deviation(im, kernel):
     # E[X]^2 - [EX]^2
     return np.sqrt(np.abs(mu_square - mu ** 2))
 
-    
+
+def local_maximum(im, peak_threshold=0.8, roi=15):
+    image = im.copy()
+    size = 2 * roi + 1
+    im_max = ndimage.maximum_filter(image, size=size, mode='constant')
+    mask = (image == im_max)
+    image *= mask
+
+    image[:roi] = 0
+    image[-roi:] = 0
+    image[:, :roi] = 0
+    image[:, -roi:] = 0
+
+    im_t = (image > peak_threshold * image.max()) * 1
+    f = np.transpose(im_t.nonzero())
+    return f, im_t
+
+# var local var
+# MRF methods here

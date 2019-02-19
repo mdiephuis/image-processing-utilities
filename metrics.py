@@ -54,3 +54,5 @@ def dwt(a, b, d=lambda x, y: np.abs(x - y)):
         for j in np.arange(1, n_cols):
             min_cost = min(cost[i - 1, j], cost[i, j - 1], cost[i - 1, j - 1])
             cost[i, j] += min_cost + d(a[i], b[j])
+
+# gram, total variation

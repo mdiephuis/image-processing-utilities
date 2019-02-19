@@ -2,6 +2,8 @@
 import numpy as np
 import cv2
 import mahotas
+from scipy.ndimage import filters
+eps = np.finfo(float).eps
 
 
 # bin order
@@ -194,3 +196,20 @@ def filter_feature(f, filter, n_pts=None):
     else:
         n_elem = min(n_pts, f.shape[0])
         return f[ind[:n_elem], :], ind[:n_elem]
+
+
+def harris_response(im, sigma=6):
+    """ Compute the Harris corner detector response function
+    for each pixel in a graylevel image. """
+    # derivatives
+    dx = filters.gaussian_filter(im, (sigma, sigma), (0, 1))
+    dy = filters.gaussian_filter(im, (sigma, sigma), (1, 0))
+
+    dxx = filters.gaussian_filter(dx * dx, sigma)
+    dxy = filters.gaussian_filter(dx * dy, sigma)
+    dyy = filters.gaussian_filter(dy * dy, sigma)
+
+    # determinant and trace
+    Wdet = dxx * dyy - dxy**2
+    Wtr = dxx + dyy + eps
+    return Wdet / Wtr
