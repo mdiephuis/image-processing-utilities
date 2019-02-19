@@ -55,4 +55,21 @@ def dwt(a, b, d=lambda x, y: np.abs(x - y)):
             min_cost = min(cost[i - 1, j], cost[i, j - 1], cost[i - 1, j - 1])
             cost[i, j] += min_cost + d(a[i], b[j])
 
-# gram, total variation
+
+def total_var_loss(patch, tv_weight=1):
+
+    w_var = np.sum((patch[:, :-1] - patch[:, 1:]) ** 2)
+    h_var = np.sum((patch[-1:, :] - patch[1:, :]) ** 2)
+
+    return tv_weight * (w_var + h_var)
+
+
+def energy_ising(spin, J=1):
+    N = spin.shape[0] * spin.shape[1]
+    neighbor_sum = np.roll(spin, -1, axis=0) + np.roll(spin, 1, axis=0) \
+        + np.roll(spin, -1, axis=1) + np.roll(spin, 1, axis=1)
+    Em = -J * np.multiply(spin, neighbor_sum)
+    E = 0.5 * np.sum(Em)
+    E_mu = E / N
+    return E_mu
+

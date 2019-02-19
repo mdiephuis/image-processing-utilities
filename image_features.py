@@ -3,19 +3,13 @@ import numpy as np
 import cv2
 
 from scipy import ndimage, signal
-import scipy.ndimage.filters as filters
-import scipy.special as special
-import scipy.optimize as optimize
-from itertools import chain
-import PIL
+from skimage.filters import threshold_otsu
+from scipy.ndimage.filters import median_filter
+from sklearn.preprocessing import scale
+from scipy.ndimage.filters import convolve
+from skimage.feature import local_binary_pattern
 
-import skimage.color as skc
-import skimage.util as sku
-from skimage import data
-
-from scipy.ndimage.filters import laplace
-
-import functools
+from utilities import to_normed_uint8
 
 
 def local_uniform_variation(im, size):
@@ -81,5 +75,89 @@ def local_maximum(im, peak_threshold=0.8, roi=15):
     f = np.transpose(im_t.nonzero())
     return f, im_t
 
-# var local var
-# MRF methods here
+
+def gram_matrix(x, normalize=True):
+    g = x.dot(x.T)
+    if normalize:
+        g /= (g.shape[0] * g.shape[1])
+    return g
+
+
+def w_stat(im, mode):
+    im = to_normed_uint8(im)
+    acc = np.zeros((256, 256))
+
+    if mode == 'w':
+        xx = im[:, :-1].ravel()
+        yy = im[:, 1:].ravel()
+    elif mode == 'h':
+        xx = im[:-1, :].ravel()
+        yy = im[1:, :].ravel()
+    elif mode == 'du':
+        xx = im[:-5, :].ravel()
+        yy = im[5:, :].ravel()
+    elif mode == 'dd':
+        xx = im[:, :-5].ravel()
+        yy = im[:, 5:].ravel()
+    else:
+        return None
+
+    for x, y in zip(xx, yy):
+        acc[x, y] += 1
+
+    return acc
+
+
+def im2spin(im):
+    im = med_filt(im)
+    bw = im > threshold_otsu(im)
+    bw = bw.astype(np.int64, copy=False)
+    bw[bw == 0] = -1
+
+    return bw
+
+
+def med_filt(im):
+    f = median_filter(im, size=3)
+    g = np.abs(im - f)
+    g = scale(g, axis=0, with_mean=True, with_std=True, copy=True)
+    return g
+
+
+def binarize(im, method='std'):
+
+    if method == 'std':
+        threshold = np.mean(im.ravel()) - 2 * np.std(im.ravel())
+    else:
+        threshold = threshold_otsu(im)
+
+    bw = im > threshold
+    bw = bw.astype(np.float64, copy=False)
+    return bw
+
+
+# Energy map util functions
+def gradxy(im_in, blur=False):
+    im = im_in.copy()
+    if blur:
+        im = cv2.GaussianBlur(im, (5, 5), 0)
+
+    gradX = cv2.Sobel(im, ddepth=cv2.CV_64F, dx=1, dy=0, ksize=-1)
+    gradY = cv2.Sobel(im, ddepth=cv2.CV_64F, dx=0, dy=1, ksize=-1)
+    gradXY = cv2.convertScaleAbs(gradX + gradY)
+
+    return gradXY
+
+
+def grad_sobel(im_in, blur=False):
+    im = im_in.copy()
+    du = np.array([[1., 2., 1.], [0., 0., 0.], [-1., -2., -1.]])
+    dv = du.T
+    energy_map = np.absolute(convolve(im, du)) + np.absolute(convolve(im, dv))
+    return energy_map
+
+
+def grad_lbp(im, radius=3, method='uniform'):
+    n_points = 8 * radius
+    lbp = local_binary_pattern(im, n_points, radius, method)
+    return lbp

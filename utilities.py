@@ -60,9 +60,14 @@ def frames_to_images(fp_in, fp_out):
 
 
 def visualize_spectrum(im):
-
     eps = np.max(im[:, :]) * 1e-2
     s1 = np.log(im[:, :] + eps) - np.log(eps)
 
     img = (s1 * 255 / np.max(s1)).astype(np.uint8)
     return cv2.equalizeHist(img)
+
+
+def visual_image(im):
+    img = (im * 255 / np.max(im)).astype(np.uint8)
+    img = cv2.equalizeHist(img)
+    return img
