@@ -9,7 +9,7 @@ from sklearn.preprocessing import scale
 from scipy.ndimage.filters import convolve
 from skimage.feature import local_binary_pattern
 
-from utilities import to_normed_uint8
+from .utilities import to_normed_uint8
 
 
 def local_uniform_variation(im, size):
