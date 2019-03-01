@@ -83,7 +83,7 @@ def gram_matrix(x, normalize=True):
     return g
 
 
-def w_stat(im, mode):
+def mrf_stat(im, mode):
     im = to_normed_uint8(im)
     acc = np.zeros((256, 256))
 
